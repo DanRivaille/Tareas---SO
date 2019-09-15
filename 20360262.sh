@@ -48,12 +48,23 @@ function comandPs {
 
 #Funcion parametro -psBloked
 function comandPsBlocked {
-	echo "tecleo -psBlocked"
+	cd /proc
+
+	printf "%10s %30s %15s\n" "PID" "NOMBRE PROCESO" "TIPO"
+
+	sort locks | awk '{printf "%10s %30s %15s\n", $5, "nombre", $2}'
 }
 
 #Funcion parametro -m
 function comandM {
-	echo "tecleo -m"
+	cd /proc
+
+	printf "%15s %15s\n" "Total" "Available"
+
+	mem_total=$(head meminfo | grep "MemTotal:" | awk '{print $2/1000000}')
+	mem_available=$(head meminfo | grep "MemAvailable:" | awk '{print $2/1000000}')
+
+	printf "%15s %15s\n" "$mem_total" "$mem_available"
 }
 
 #Funcion parametro -tcp
