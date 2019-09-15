@@ -23,6 +23,27 @@ function noComand {
 #Funcion parametro -ps
 function comandPs {
 	cd /proc
+
+	printf "%10s %8s %8s %15s %30s\n" "UID" "PID" "PPID" "STATUS" "CMD"
+
+	for directory in *; do
+		if [[ $directory =~ [0-9] ]]; then
+			uid=$(head $directory/stat | awk '{print $5}')
+			pid=$(head $directory/stat | awk '{print $1}')
+			ppid=$(head $directory/stat | awk '{print $4}')
+			status=$(head $directory/stat | awk '{print $3}')
+			cmd=$(head $directory/stat | awk '{print $2}')
+
+			printf "%10s %8s %8s " "$uid" "$pid" "$ppid"
+
+			if [ $status == "S" ]; then
+				printf "%15s " "Sleeping"
+			else
+				printf "%15s " "$status"
+			fi
+			printf "%30s\n" "$cmd"
+		fi
+	done
 }
 
 #Funcion parametro -psBloked
