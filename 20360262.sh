@@ -66,10 +66,10 @@ function comandPsBlocked {
 
 	for (( i = 1 ; i <= $cant_lineas ; i++ )); do
 		pid=$(cat locks | awk -v linea_actual=$i '{if (NR == linea_actual) print $5}')
-		bloqueo=$(cat locks | awk -v linea_actual=$i '{if (NR == linea_actual) print $2}')	
+		bloqueo=$(cat locks | awk -v linea_actual=$i '{if (NR == linea_actual) print $2}')
 
 		name=$(head $pid/status | grep "Name:" | awk '{print $2}')
-		
+
 		printf "%10s %30s %15s\n" "$pid" "$name" "$bloqueo"
 	done
 }
@@ -80,10 +80,11 @@ function comandM {
 
 	printf "%15s %15s\n" "Total" "Available"
 
-	mem_total=$(head meminfo | grep "MemTotal:" | awk '{print $2/1000000}')
-	mem_available=$(head meminfo | grep "MemAvailable:" | awk '{print $2/1000000}')
+	total=$(head meminfo | grep "MemTotal:" | awk '{print $2/1000000}')
+	mem_total=$(echo ${total:0:3})
 
-	#mem_total_pr=$(echo "scale=2; $mem_total / 10000000" | bc -l)
+	available=$(head meminfo | grep "MemAvailable:" | awk '{print $2/1000000}')
+	mem_available=$(echo ${available:0:3})
 
 	printf "%15s %15s\n" "$mem_total" "$mem_available"
 }
@@ -117,7 +118,7 @@ function comandTcp {
 
 #Funcion parametro -tcpSatus
 function comandTcpStatus {
-	echo "tecleo -tcpStatus"
+
 }
 
 #Funcion parametro -help
