@@ -62,11 +62,12 @@ function comandPsBlocked {
 	cd /proc
 
 	printf "%10s %30s %15s\n" "PID" "NOMBRE PROCESO" "TIPO"
-	cant_lineas=$(wc -l locks | awk '{print $1}')
 
-	for (( i = 1 ; i <= $cant_lineas ; i++ )); do
-		pid=$(cat locks | awk -v linea_actual=$i '{if (NR == linea_actual) print $5}')
-		bloqueo=$(cat locks | awk -v linea_actual=$i '{if (NR == linea_actual) print $2}')
+	IFS=$'\n' # nuevo separador de campo, el caracter fin de línea
+	for line in $(sort -k 2 locks)
+	do
+		pid=$(echo $line | awk '{print $5}')
+		bloqueo=$(echo $line | awk '{print $2}')
 
 		name=$(head $pid/status | grep "Name:" | awk '{print $2}')
 
@@ -89,6 +90,11 @@ function comandM {
 	printf "%15s %15s\n" "$mem_total" "$mem_available"
 }
 
+#Funcion para tranformar a notacion decimal
+function transfDec {
+	echo "hola"	
+}
+
 #Funcion parametro -tcp
 function comandTcp {
 	cd /proc
@@ -97,13 +103,23 @@ function comandTcp {
 	cant_lineas=$(wc -l net/tcp | awk '{print $1+1}')
 
 	for ((i = 2 ; i <= $cant_lineas ; i++)); do
-		ip_origen=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $2}' net/tcp)
-		ip_destino=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $3}' net/tcp)
+		ip_port_origen=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $2}' net/tcp)
+		ip_port_destino=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $3}' net/tcp)
 		status=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $4}' net/tcp)
 
-		#primera_parte=$((16#{variable:6:2}))
+		ip_origen_hex=$(echo ${ip_port_origen:0:8})
+		ip_destino_hex=$(echo ${ip_port_destino:0:8})
 
-		printf "%20s %20s " "$ip_origen" "$ip_destino"
+		ip_origen=$(echo "ibase=16; $ip_origen_hex" | bc)
+		ip_destino=$(echo "ibase=16; $ip_destino_hex" | bc)
+
+		port_origen_hex=$(echo ${ip_port_origen#*:})
+		port_destino_hex=$(echo ${ip_port_destino#*:})
+
+		port_origen=$(echo "ibase=16; $port_origen_hex" | bc)
+		port_destino=$(echo "ibase=16; $port_destino_hex" | bc)
+
+		printf "     %010d:%s \t  %010d:%s " "$ip_origen" "$port_origen" "$ip_destino" "$port_destino"
 
 		if [ "$status" == "0A" ]; then
 			printf "%15s\n" "LISTEN"
@@ -118,7 +134,29 @@ function comandTcp {
 
 #Funcion parametro -tcpSatus
 function comandTcpStatus {
+	cd /proc
 
+	printf "%20s %20s %15s\n" "Source:Port" "Destination:Port" "Status"
+
+
+	IFS=$'\n' # nuevo separador de campo, el caracter fin de línea
+	for line in $(sort -k 4 net/tcp)
+	do
+		ip_port_origen=$(echo $line | awk '{if ($1 != "sl") print $2}')
+		ip_port_destino=$(echo $line | awk '{if ($1 != "sl") print $3}')
+		status=$(echo $line | awk '{if ($1 != "sl") print $4}')
+
+		printf "%20s %20s " "$ip_port_origen" "$ip_port_destino"
+
+		if [ "$status" == "0A" ]; then
+			printf "%15s\n" "LISTEN"
+		elif [ "$status" == "06" ]; then
+			printf "%15s\n" "TIME WAIT"
+		elif [ "$status" == "01" ]; then
+			printf "%15s\n" "ESTABLISHED"
+		fi
+
+	done
 }
 
 #Funcion parametro -help
