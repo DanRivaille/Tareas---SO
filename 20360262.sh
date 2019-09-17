@@ -32,7 +32,7 @@ function comandPs {
 			pid=$(head $directory/stat | awk '{print $1}')
 			ppid=$(head $directory/stat | awk '{print $4}')
 			status=$(head $directory/stat | awk '{print $3}')
-			cant_words=$(wc -w $directory/cmdline | awk '{print $1}')				#se cuentan las lines de cmdline, si son 0, se lee comm
+			cant_words=$(wc -w $directory/cmdline | awk '{print $1}')	#se cuentan las lines de cmdline, si son 0, se lee comm
 
 			printf "%10s %8s %8s " "$uid" "$pid" "$ppid"
 
@@ -42,11 +42,19 @@ function comandPs {
 				printf "%15s " "Idle"
 			elif [ $status == "R" ]; then
 				printf "%15s " "Running"
+			elif [ $status == "D" ]; then
+				printf "%15s " "Disk Sleep"
+			elif [ $status == "T" ]; then
+				printf "%15s " "Stopped"
+			elif [ $status == "Z" ]; then
+				printf "%15s " "Zombie"
+			elif [ $status == "X" ]; then
+				printf "%15s " "Death"
 			else
 				printf "%15s " "$status"
 			fi
 
-			if [ $cant_words -ne 0 ]; then						#se valida si el archivo cmdline contiene alguna palabra
+			if [ $cant_words -ne 0 ]; then					#se valida si el archivo cmdline contiene alguna palabra
 				cmd=$(cat $directory/cmdline | awk '{print $1}')
 			else
 				cmd=$(cat $directory/comm | awk '{print $1}')
@@ -90,9 +98,23 @@ function comandM {
 	printf "%15s %15s\n" "$mem_total" "$mem_available"
 }
 
-#Funcion para tranformar a notacion decimal
+#Funcion para tranformar a notacion decimal la cadena de entrada en formato ip:port
 function transfDec {
-	echo "hola"	
+	ip_pt1_hex=$(echo ${1:0:2})
+	ip_pt2_hex=$(echo ${1:2:2})
+	ip_pt3_hex=$(echo ${1:4:2})
+	ip_pt4_hex=$(echo ${1:6:2})
+
+	ip_pt1=$(echo "ibase=16; $ip_pt1_hex" | bc)
+	ip_pt2=$(echo "ibase=16; $ip_pt2_hex" | bc)
+	ip_pt3=$(echo "ibase=16; $ip_pt3_hex" | bc)
+	ip_pt4=$(echo "ibase=16; $ip_pt4_hex" | bc)
+
+	port_hex=$(echo ${1#*:})
+
+	port=$(echo "ibase=16; $port_hex" | bc)
+
+	echo "$ip_pt1.$ip_pt2.$ip_pt3.$ip_pt4:$port"
 }
 
 #Funcion parametro -tcp
@@ -103,23 +125,18 @@ function comandTcp {
 	cant_lineas=$(wc -l net/tcp | awk '{print $1+1}')
 
 	for ((i = 2 ; i <= $cant_lineas ; i++)); do
-		ip_port_origen=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $2}' net/tcp)
-		ip_port_destino=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $3}' net/tcp)
+		ip_port_origen_hex=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $2}' net/tcp)
+		ip_port_destino_hex=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $3}' net/tcp)
 		status=$(awk -v linea_actual=$i '{if (NR == linea_actual) print $4}' net/tcp)
 
-		ip_origen_hex=$(echo ${ip_port_origen:0:8})
-		ip_destino_hex=$(echo ${ip_port_destino:0:8})
+		if [ "$ip_port_origen_hex" == "" ]; then #Se valida si la cadena actual no es una cadena vacia, en caso que lo sea, termina la funcion
+			return
+		fi
 
-		ip_origen=$(echo "ibase=16; $ip_origen_hex" | bc)
-		ip_destino=$(echo "ibase=16; $ip_destino_hex" | bc)
+		ip_port_origen=$(transfDec $ip_port_origen_hex)
+		ip_port_destino=$(transfDec $ip_port_destino_hex)
 
-		port_origen_hex=$(echo ${ip_port_origen#*:})
-		port_destino_hex=$(echo ${ip_port_destino#*:})
-
-		port_origen=$(echo "ibase=16; $port_origen_hex" | bc)
-		port_destino=$(echo "ibase=16; $port_destino_hex" | bc)
-
-		printf "     %010d:%s \t  %010d:%s " "$ip_origen" "$port_origen" "$ip_destino" "$port_destino"
+		printf "%20s %20s " "$ip_port_origen" "$ip_port_destino"
 
 		if [ "$status" == "0A" ]; then
 			printf "%15s\n" "LISTEN"
@@ -128,7 +145,6 @@ function comandTcp {
 		elif [ "$status" == "01" ]; then
 			printf "%15s\n" "ESTABLISHED"
 		fi
-
 	done
 }
 
@@ -142,9 +158,16 @@ function comandTcpStatus {
 	IFS=$'\n' # nuevo separador de campo, el caracter fin de línea
 	for line in $(sort -k 4 net/tcp)
 	do
-		ip_port_origen=$(echo $line | awk '{if ($1 != "sl") print $2}')
-		ip_port_destino=$(echo $line | awk '{if ($1 != "sl") print $3}')
+		ip_port_origen_hex=$(echo $line | awk '{if ($1 != "sl") print $2}')
+		ip_port_destino_hex=$(echo $line | awk '{if ($1 != "sl") print $3}')
 		status=$(echo $line | awk '{if ($1 != "sl") print $4}')
+
+		if [ "$ip_port_origen_hex" == "" ]; then	#Se valida si la cadena actual no es una cadena vacia, si lo es, termina la funcion
+			exit
+		fi
+
+		ip_port_origen=$(transfDec $ip_port_origen_hex)
+		ip_port_destino=$(transfDec $ip_port_destino_hex)
 
 		printf "%20s %20s " "$ip_port_origen" "$ip_port_destino"
 
@@ -155,7 +178,6 @@ function comandTcpStatus {
 		elif [ "$status" == "01" ]; then
 			printf "%15s\n" "ESTABLISHED"
 		fi
-
 	done
 }
 
