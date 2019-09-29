@@ -12,9 +12,9 @@ function noComand {
 	model_name=$(head cpuinfo | grep "model name" | awk '{print $4,$5,$6,$7,$9}')	#se extrae el modelo del procesador
 	kernel_version=$(cat version | awk '{print $3}')				#se extrae la version del kernel
 	memory=$(head meminfo | grep "MemTotal:" | awk '{print $2}')			#se extrae la cantidad de memoria
-	uptime=$(cat uptime | awk '{print $1/84600}')					#se extrae el tiempo que ha estado prendido el equipo
+	uptime=$(cat uptime | awk '{printf "%.3f",$1/84600}')					#se extrae el tiempo que ha estado prendido el equipo
 
-	echo "ModelName:     $model_name"
+	echo "ModelName:     $model_name"						#se muestra la informacion
 	echo "KernelVersion: $kernel_version"
 	echo "Memory (kb):   $memory kb"
 	echo "Uptime (dias): $uptime"
@@ -60,7 +60,7 @@ function comandPs {
 				cmd=$(cat $directory/comm | awk '{print $1}')		#si no es asi, se saca el cmd del archivo comm
 			fi
 
-			printf "%60s\n" "$cmd"
+			printf "%60s\n" "$cmd"						#se muestra el cmd
 		fi
 	done
 }
@@ -89,11 +89,9 @@ function comandM {
 
 	printf "%15s %15s\n" "Total" "Available"					#se imprime el encabezado
 
-	total=$(head meminfo | grep "MemTotal:" | awk '{print $2/1000000}')		#se extrae la cantidad total de memoria
-	mem_total=$(echo ${total:0:3})							#se trunca la cantidad a 1 decimal despues de la coma
+	mem_total=$(head meminfo | grep "MemTotal:" | awk '{printf "%.1f",$2/1048576}')		#se extrae la cantidad total de memoria
 
-	available=$(head meminfo | grep "MemAvailable:" | awk '{print $2/1000000}')	#se extrae la cantidad disponile de memoria
-	mem_available=$(echo ${available:0:3})						#se trunca la cantidad a 1 decimal despues de la coma
+	mem_available=$(head meminfo | grep "MemAvailable:" | awk '{printf "%.1f",$2/1048576}')	#se extrae la cantidad disponile de memoria
 
 	printf "%15s %15s\n" "$mem_total" "$mem_available"				#se muestra la info
 }
@@ -183,8 +181,40 @@ function comandTcpStatus {
 }
 
 #Funcion parametro -help
-function comandoHelp {
-	echo "tecleo -help"
+function comandHelp {
+	printf "\n%s\n\n" "Parametro		-		Descripcion"
+
+	printf "\n%s\n" "(Sin Parametros) Mostrara una informacion general del equipo."
+	printf "\t%s\n" "ModelName     : Modelo del procesador"
+	printf "\t%s\n" "KernelVersion : Version del kernel"
+	printf "\t%s\n" "Memory (kb)   : Cantidad de Memoria Ram"
+	printf "\t%s\n" "Uptime(Dias)  : Cantidad de dias que ha estado encendido el dispositivo"
+
+	printf "\n%s\n" "(-ps) Mostrara informacion acerca de los procesos."
+	printf "\t%s\n" "UID:    Identificador del usuario"
+	printf "\t%s\n" "PID:    Identificador del proceso"
+	printf "\t%s\n" "PPID:   Identificador del padre del proceso"
+	printf "\t%s\n" "Status: Estado actual del proceso"
+	printf "\t%s\n" "CMD:    Argumentos de la linea de comandos el proceso"
+
+	printf "\n%s\n" "(-psBlocked) Mostrara cierta informacion de los procesos que tienen archivos bloqueados"
+	printf "\t%s\n" "PID:            Identificador del proceso"
+	printf "\t%s\n" "Nombre Proceso: Nombre del proceso"
+	printf "\t%s\n" "TIPO:           Tipo de bloqueo, la informacion estara ordenada con respecto a este campo"
+
+	printf "\n%s\n" "(-m) Mostrara informacion de la memoria ram del equipo."
+	printf "\t%s\n" "Total:     Cantidad de memoria ram total del equipo (en Gb)"
+	printf "\t%s\n" "Available: Cantidad de memoria disponible del equipo (en Gb)"
+
+	printf "\n%s\n" "(-tcp) Mostrara informacion acerca de las conexiones tcp."
+	printf "\t%s\n" "Source:Port:      Direccion ip origen y puerto de la conexion tcp"
+	printf "\t%s\n" "Destination:Port: Direccion ip destino y puerto de la conexion tcp"
+	printf "\t%s\n" "Status:           Estado actual de la conexion tcp"
+
+	printf "\n%s\n" "(-tcpStatus) Mostrara informacion acerca de las conexiones tcp."
+	printf "\t%s\n" "Source:Port:      Direccion ip origen y puerto de la conexion tcp"
+	printf "\t%s\n" "Destination:Port: Direccion ip destino y puerto de la conexion tcp"
+	printf "\t%s\n" "Status:           Estado actual de la conexion tcp, la informacion sera ordenada con respecto a este campo"
 }
 
 #Programa Principal
@@ -192,8 +222,8 @@ function comandoHelp {
 if [ $# -eq 0 ]; then			#si no se introdujo ningun parametro
 	noComand
 else
-	case $1 in			#si se introdujo -ps
-	"-ps")
+	case $1 in
+	"-ps")				#si se introdujo -ps
 		comandPs
 	;;
 
@@ -214,7 +244,7 @@ else
 	;;
 
 	"-help")			#si se introdujo -hep
-		comandTcpStatus
+		comandHelp
 	;;
 
 	*)				#si el argumento ingresado no corresponde con ninguno de los anteriores
