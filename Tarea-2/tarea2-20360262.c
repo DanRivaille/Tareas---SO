@@ -1,5 +1,6 @@
 /** 
- * Autor: Dan Santos
+ * Autor: Ivan Dan Santos Vila
+ * Rut:   20.360.262-6
  * Proposito: Este programa leera por pantalla una cadena a buscar (de un maximo de 100 caracteres), 
  *			  y buscara en el arbol de directorios, todos los archivos de texto, las coincidencias
  *			  con el texto ingresado, para cada una se mostrara la linea en donde se encontro.
@@ -15,6 +16,7 @@
 #include <ftw.h>
 
 #define MAX_CARACT 100
+#define MAX_LINE 2700
 
 /** --------- Variables globales --------- */
 static pthread_mutex_t printf_mutex;		//Semaforo que controlara el acceso a stdout
@@ -88,9 +90,9 @@ void *searchText(void *path_vptr)
 
 	if(file != NULL)
 	{
-		char line[MAX_CARACT * 27];
+		char line[MAX_LINE + 1];
 
-		while(fgets(line, MAX_CARACT * 27, file) != NULL)
+		while(fgets(line, MAX_LINE, file) != NULL)
 		{
 			if(strstr(line, text_searched) != NULL)
 			{
